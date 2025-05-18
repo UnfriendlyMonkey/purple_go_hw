@@ -6,8 +6,9 @@ import (
 	"time"
 )
 
+var r = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 func numsGenerator(numCh chan int) {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for i := 0; i < 10; i++ {
 		numCh <- r.Intn(101)
 	}
@@ -25,9 +26,23 @@ func squareNums(numCh chan int, sqCh chan int) {
 func main() {
 	numCh := make(chan int)
 	sqCh := make(chan int)
+
 	go numsGenerator(numCh)
 	go squareNums(numCh, sqCh)
-	for res := range sqCh {
-		fmt.Println(res)
+
+	// Add timeout to prevent infinite waiting
+	timeout := time.After(2 * time.Second)
+
+	for {
+		select {
+		case res, ok := <-sqCh:
+			if !ok {
+				return
+			}
+			fmt.Println(res)
+		case <-timeout:
+			fmt.Println("Operation timed out")
+			return
+		}
 	}
 }
