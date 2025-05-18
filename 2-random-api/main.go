@@ -9,7 +9,9 @@ import (
 
 func randomHandler(w http.ResponseWriter, r *http.Request) {
 	num := rand.Intn(6) + 1
-	w.Write(fmt.Appendf(nil, "%d", num))
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "%d", num)
 }
 
 func main() {
