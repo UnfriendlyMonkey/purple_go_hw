@@ -11,7 +11,7 @@ func SaveToFile(m map[string]string) error {
 	// Convert to JSON
 	jsonData, err := json.Marshal(m)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// Write to file
@@ -25,12 +25,12 @@ func SaveToFile(m map[string]string) error {
 func ReadFromFile() (map[string]string, error) {
 	fileContent, err := os.ReadFile("address.json")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	hashedData := make(map[string]string)
 	err = json.Unmarshal(fileContent, &hashedData)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	fmt.Printf("hashedData: %s", hashedData)
 	return hashedData, nil

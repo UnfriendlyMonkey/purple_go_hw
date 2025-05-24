@@ -1,12 +1,12 @@
 package verify
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"go/hw/3-validation-api/configs"
 	"go/hw/3-validation-api/pkg/file"
+	"go/hw/3-validation-api/pkg/hash"
+	"go/hw/3-validation-api/pkg/resp"
 	"go/hw/3-validation-api/pkg/send"
 	"log"
 	"net/http"
@@ -36,16 +36,22 @@ func (handler *VerifyHandler) Send() http.HandlerFunc {
 			log.Println("no address found in body")
 			return
 		}
-
-		hasher := md5.New()
-		hasher.Write([]byte(addr.Email))
-		hashStr := hex.EncodeToString(hasher.Sum(nil))
-		hashedData := map[string]string{
-			hashStr: addr.Email,
+		hashStr, err := hash.Hash(addr.Email)
+		if err != nil {
+			log.Println("Error getting hash")
+			resp.Json(w, "Something's wrong", http.StatusInternalServerError)
 		}
+		hashedData, err := file.ReadFromFile()
+		if err != nil {
+			log.Println(err)
+			hashedData = make(map[string]string)
+		}
+		hashedData[hashStr] = addr.Email
+
 		err = file.SaveToFile(hashedData)
 		if err != nil {
-			panic(err)
+			fmt.Println("File with emails not found")
+			resp.Json(w, "Something's wrong", http.StatusInternalServerError)
 		}
 
 		link := fmt.Sprintf("http://localhost:8083/verify/%s", hashStr)
@@ -65,9 +71,10 @@ func (handler *VerifyHandler) Send() http.HandlerFunc {
 		data := SendResponse{
 			Details: message,
 		}
-		w.Header().Set("Content-type", "application/json")
-		w.WriteHeader(status)
-		json.NewEncoder(w).Encode(data)
+		resp.Json(w, data, status)
+		// w.Header().Set("Content-type", "application/json")
+		// w.WriteHeader(status)
+		// json.NewEncoder(w).Encode(data)
 	}
 }
 
@@ -76,19 +83,26 @@ func (handler *VerifyHandler) Verify() http.HandlerFunc {
 		hash := r.PathValue("hash")
 		hashedData, err := file.ReadFromFile()
 		if err != nil {
-			panic(err)
+			fmt.Println("File with emails not found")
+			resp.Json(w, "Email not found", http.StatusNotFound)
 		}
 		addr, exists := hashedData[hash]
 		if !exists {
 			fmt.Printf("No such hash stored: %s", hash)
+			resp.Json(w, "Email not found", http.StatusNotFound)
+		}
+		delete(hashedData, hash)
+		err = file.SaveToFile(hashedData)
+		if err != nil {
+			log.Println(err)
 		}
 
-		// read from file and compare hash
 		data := SendResponse{
 			Details: fmt.Sprintf("your address %s is verified", addr),
 		}
-		w.Header().Set("Content-type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(data)
+		resp.Json(w, data, http.StatusOK)
+		// w.Header().Set("Content-type", "application/json")
+		// w.WriteHeader(http.StatusOK)
+		// json.NewEncoder(w).Encode(data)
 	}
 }
