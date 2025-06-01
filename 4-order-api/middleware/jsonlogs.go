@@ -2,10 +2,17 @@ package middleware
 
 import (
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/sirupsen/logrus"
 )
+
+func init() {
+	logrus.SetFormatter(&logrus.JSONFormatter{})
+	logrus.SetOutput(os.Stdout)
+	logrus.SetLevel(logrus.InfoLevel)
+}
 
 func JsonLogs(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
