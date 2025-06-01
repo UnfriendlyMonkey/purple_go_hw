@@ -11,7 +11,6 @@ type Config struct {
 	Email    string
 	Password string
 	Address  string
-	To       string
 }
 
 func LoadConfig() *Config {
@@ -24,6 +23,5 @@ func LoadConfig() *Config {
 		Email:    os.Getenv("EMAIL"),
 		Password: os.Getenv("PASSWORD"),
 		Address:  os.Getenv("ADDRESS"),
-		To:       os.Getenv("TO"),
 	}
 }

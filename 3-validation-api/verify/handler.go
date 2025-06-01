@@ -34,12 +34,14 @@ func (handler *VerifyHandler) Send() http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&addr)
 		if err != nil {
 			log.Println("no address found in body")
+			resp.Json(w, "Something's wrong", http.StatusInternalServerError)
 			return
 		}
 		hashStr, err := hash.Hash(addr.Email)
 		if err != nil {
 			log.Println("Error getting hash")
 			resp.Json(w, "Something's wrong", http.StatusInternalServerError)
+			return
 		}
 		hashedData, err := file.ReadFromFile()
 		if err != nil {
@@ -52,6 +54,7 @@ func (handler *VerifyHandler) Send() http.HandlerFunc {
 		if err != nil {
 			fmt.Println("File with emails not found")
 			resp.Json(w, "Something's wrong", http.StatusInternalServerError)
+			return
 		}
 
 		link := fmt.Sprintf("http://localhost:8083/verify/%s", hashStr)
@@ -85,11 +88,13 @@ func (handler *VerifyHandler) Verify() http.HandlerFunc {
 		if err != nil {
 			fmt.Println("File with emails not found")
 			resp.Json(w, "Email not found", http.StatusNotFound)
+			return
 		}
 		addr, exists := hashedData[hash]
 		if !exists {
 			fmt.Printf("No such hash stored: %s", hash)
 			resp.Json(w, "Email not found", http.StatusNotFound)
+			return
 		}
 		delete(hashedData, hash)
 		err = file.SaveToFile(hashedData)
