@@ -5,8 +5,6 @@ import (
 	"go/hw/4-order-api/pkg/resp"
 	"net/http"
 	"strconv"
-
-	"gorm.io/gorm"
 )
 
 type ProductHandler struct {
@@ -80,23 +78,35 @@ func (h *ProductHandler) UpdateProduct() http.HandlerFunc {
 			return
 		}
 
+		existingProduct, err := h.ProductRepository.GetProductById(id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		body, err := req.HandleBody[ProductUpdateRequest](&w, r)
 		if err != nil {
 			return
 		}
 
-		product := &Product{
-			Model: gorm.Model{
-				ID: uint(id),
-			},
-			Name:        body.Name,
-			Description: body.Description,
-			Price:       body.Price,
-			Quantity:    body.Quantity,
-			Image:       body.Image,
+		// Update only changed fields
+		if body.Name != "" && body.Name != existingProduct.Name {
+			existingProduct.Name = body.Name
+		}
+		if body.Description != existingProduct.Description {
+			existingProduct.Description = body.Description
+		}
+		if body.Price != 0 && body.Price != existingProduct.Price {
+			existingProduct.Price = body.Price
+		}
+		if body.Quantity != 0 && body.Quantity != existingProduct.Quantity {
+			existingProduct.Quantity = body.Quantity
+		}
+		if body.Image != existingProduct.Image {
+			existingProduct.Image = body.Image
 		}
 
-		updatedProduct, err := h.ProductRepository.UpdateProduct(product)
+		updatedProduct, err := h.ProductRepository.UpdateProduct(existingProduct)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -126,6 +136,6 @@ func (h *ProductHandler) DeleteProduct() http.HandlerFunc {
 			return
 		}
 
-		resp.Json(w, nil, http.StatusNoContent)
+		w.WriteHeader(http.StatusNoContent)
 	}
 }
