@@ -1,6 +1,8 @@
 package product
 
 import (
+	"go/hw/4-order-api/configs"
+	"go/hw/4-order-api/middleware"
 	"go/hw/4-order-api/pkg/req"
 	"go/hw/4-order-api/pkg/resp"
 	"net/http"
@@ -13,6 +15,7 @@ type ProductHandler struct {
 
 type ProductHandlerDeps struct {
 	ProductRepository *ProductRepository
+	Config            *configs.Config
 }
 
 func NewProductHandler(router *http.ServeMux, deps ProductHandlerDeps) {
@@ -22,8 +25,8 @@ func NewProductHandler(router *http.ServeMux, deps ProductHandlerDeps) {
 
 	router.HandleFunc("POST /product", handler.CreateProduct())
 	router.HandleFunc("GET /product/{id}", handler.GetProductById())
-	router.HandleFunc("PUT /product/{id}", handler.UpdateProduct())
-	router.HandleFunc("DELETE /product/{id}", handler.DeleteProduct())
+	router.Handle("PUT /product/{id}", middleware.AuthMiddleware(handler.UpdateProduct(), deps.Config))
+	router.Handle("DELETE /product/{id}", middleware.AuthMiddleware(handler.DeleteProduct(), deps.Config))
 }
 
 func (h *ProductHandler) CreateProduct() http.HandlerFunc {

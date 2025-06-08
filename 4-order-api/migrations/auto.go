@@ -2,6 +2,7 @@ package main
 
 import (
 	"go/hw/4-order-api/internal/product"
+	"go/hw/4-order-api/internal/user"
 	"log"
 	"os"
 
@@ -21,7 +22,7 @@ func main() {
 		log.Fatal("Error connecting to database")
 	}
 
-	db.AutoMigrate(&product.Product{})
+	db.AutoMigrate(&product.Product{}, &user.User{})
 
 	log.Println("Database migrated")
 }
